@@ -1,0 +1,5 @@
+com.example.freshshop.config.RedisConfig
+com.example.freshshop.config.RedissonConfig
+com.example.freshshop.config.CorsConfig
+com.example.freshshop.config.OpenApiConfig
+com.example.freshshop.config.WebConfig

@@ -2,7 +2,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 继承你的正确父工程 -->
     <parent>
         <groupId>org.example</groupId>
         <artifactId>cloud-parent</artifactId>
@@ -10,20 +11,23 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
+    <modelVersion>4.0.0</modelVersion>
     <artifactId>fresh-shop-gateway</artifactId>
 
-    <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
     <dependencies>
-        <!-- 引入公共模块：因为父工程已管理版本，这里不用写 version -->
+        <!-- 网关核心依赖（强制写版本，确保一定能下载） -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
+            <version>4.0.6</version>
+        </dependency>
+
+        <!-- 公共包 -->
         <dependency>
             <groupId>org.example</groupId>
             <artifactId>common-api</artifactId>
         </dependency>
 
-        <!-- 其他业务依赖：spring-boot-starter-web、mybatis、redis 等 -->
     </dependencies>
+
 </project>

@@ -1,0 +1,14 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: file-service
+  # 文件服务不需要数据库！！！
+  web:
+    resources:
+      static-locations: file:D:/upload/
+
+# 图片访问映射
+mvc:
+  static-path-pattern: /file/**

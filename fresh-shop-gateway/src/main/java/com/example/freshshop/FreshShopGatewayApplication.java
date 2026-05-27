@@ -3,9 +3,9 @@ package com.example.freshshop;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication(scanBasePackages = "com.example.freshshop")
-public class PayServiceApplication {
+@SpringBootApplication
+public class FreshShopGatewayApplication {
     public static void main(String[] args) {
-        SpringApplication.run(PayServiceApplication.class, args);
+        SpringApplication.run(FreshShopGatewayApplication.class, args);
     }
 }

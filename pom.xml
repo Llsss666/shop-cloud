@@ -22,7 +22,6 @@
         <module>user-service</module>
         <module>order-service</module>
         <module>product-service</module>
-        <module>pay-service</module>
         <module>file-service</module>
         <module>marketing-service</module>
         <module>fresh-shop-gateway</module>

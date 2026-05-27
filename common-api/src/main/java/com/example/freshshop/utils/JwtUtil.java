@@ -14,7 +14,6 @@ public class JwtUtil {
     private static final String SECRET = "your-secret-key-32bytes-long-secure";
     private static final SecretKey KEY = Keys.hmacShaKeyFor(SECRET.getBytes());
 
-    // 过期时间 7天（与Redis同步）
     public static final long EXPIRE_DAYS = 7;
     private static final long EXPIRE_MILLIS = 1000L * 60 * 60 * 24 * EXPIRE_DAYS;
 
@@ -47,5 +46,15 @@ public class JwtUtil {
     public static Long getUserIdFromToken(String token) {
         Claims claims = parseToken(token);
         return Long.parseLong(claims.getSubject());
+    }
+
+    // ===================== 【新增】校验token是否有效 =====================
+    public static boolean isTokenValid(String token) {
+        try {
+            parseToken(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

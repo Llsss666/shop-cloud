@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/seckill")
+@RequestMapping("/api/seckill")
 public class SeckillController {
 
     // 注入我们的秒杀服务

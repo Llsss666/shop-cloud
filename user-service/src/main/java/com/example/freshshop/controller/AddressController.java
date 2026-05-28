@@ -14,7 +14,7 @@ import java.util.List;
 
 @Tag(name = "收货地址管理") // 分组名称
 @RestController
-@RequestMapping("/address")
+@RequestMapping("/api/address")
 public class AddressController {
 
     @Autowired

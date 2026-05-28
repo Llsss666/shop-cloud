@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @Tag(name = "文件上传 / 头像管理")
 @RestController
-@RequestMapping("/file")
+@RequestMapping("/api/file")
 public class FileController {
 
     private static final String UPLOAD_DIR = "D:/upload/";

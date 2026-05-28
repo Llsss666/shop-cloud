@@ -20,7 +20,8 @@ public interface UserFeignClient {
     @PostMapping("/feign/cart/clear")
     Result<Void> clearCart(@RequestParam("userId") Long userId);
 
-    // 使用优惠券
-    @PostMapping("/feign/coupon/use")
-    Result<Void> useCoupon(@RequestParam("couponId") Long couponId);
+    // ===================== 加上这一个方法！=====================
+    @GetMapping("/feign/permission/getPermissionKeysByUserId")
+    Result<List<String>> getPermissionKeysByUserId(@RequestParam("userId") Long userId);
+
 }

@@ -9,6 +9,7 @@ import com.example.freshshop.dto.GoodsDTO;
 import com.example.freshshop.entity.Order;
 import com.example.freshshop.entity.OrderItem;
 import com.example.freshshop.feign.GoodsFeignClient;
+import com.example.freshshop.feign.MarketingFeignClient;
 import com.example.freshshop.feign.UserFeignClient;
 import com.example.freshshop.mapper.OrderMapper;
 import com.example.freshshop.mapper.OrderItemMapper;
@@ -37,19 +38,24 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private final UserFeignClient userFeignClient;
     private final GoodsFeignClient goodsFeignClient;
 
-    // 构造注入
+    // ====================== 🔥 注入新增的 MarketingFeignClient ======================
+    private final MarketingFeignClient marketingFeignClient;
+
+    // ====================== 🔥 构造器已更新 ======================
     public OrderServiceImpl(OrderMapper orderMapper,
                             OrderItemMapper orderItemMapper,
                             RedissonClient redissonClient,
                             RocketMQTemplate rocketMQTemplate,
                             UserFeignClient userFeignClient,
-                            GoodsFeignClient goodsFeignClient) {
+                            GoodsFeignClient goodsFeignClient,
+                            MarketingFeignClient marketingFeignClient) {
         this.orderMapper = orderMapper;
         this.orderItemMapper = orderItemMapper;
         this.redissonClient = redissonClient;
         this.rocketMQTemplate = rocketMQTemplate;
         this.userFeignClient = userFeignClient;
         this.goodsFeignClient = goodsFeignClient;
+        this.marketingFeignClient = marketingFeignClient;
     }
 
     private static final int DELAY_LEVEL_15MIN = 16;
@@ -84,10 +90,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (order == null) return Result.error("订单不存在");
         if (order.getStatus() != 0) return Result.error("订单已支付或已取消");
 
-        // 暂时注释优惠券，避免你报错
-        // if (couponId != null) {
-        //     userFeignClient.useCoupon(couponId);
-        // }
+        // ====================== 🔥 优惠券从 marketing-service 调用 ======================
+        if (couponId != null) {
+            marketingFeignClient.useCoupon(couponId);
+        }
 
         order.setStatus(1);
         order.setPayTime(LocalDateTime.now());

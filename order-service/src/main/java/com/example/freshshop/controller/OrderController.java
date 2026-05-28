@@ -19,7 +19,7 @@ import java.util.List;
 
 @Tag(name = "订单管理")
 @RestController
-@RequestMapping("/order")
+@RequestMapping("/api/order")
 public class OrderController {
 
     private final OrderService orderService;

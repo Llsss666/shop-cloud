@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @Tag(name = "文件上传服务")
 @RestController
-@RequestMapping("/file")
+@RequestMapping("/api/file")
 public class FileController {
 
     // 上传目录（可配置在yml，这里先固定）

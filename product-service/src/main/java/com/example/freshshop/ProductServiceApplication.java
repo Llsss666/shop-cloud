@@ -6,10 +6,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication(scanBasePackages = "com.example.freshshop")
+@SpringBootApplication
 @MapperScan("com.example.freshshop.mapper")
-@EnableFeignClients(basePackages = "com.example.freshshop")
-@EnableScheduling // 👈 加这个
+@EnableFeignClients
+@EnableScheduling
+// 🔥 去掉多余的 @Import 和 scanBasePackages，完全不需要！
 public class ProductServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(ProductServiceApplication.class, args);

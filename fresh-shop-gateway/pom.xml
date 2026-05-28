@@ -3,7 +3,6 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <!-- 继承你的正确父工程 -->
     <parent>
         <groupId>org.example</groupId>
         <artifactId>cloud-parent</artifactId>
@@ -15,17 +14,11 @@
     <artifactId>fresh-shop-gateway</artifactId>
 
     <dependencies>
-        <!-- 网关核心依赖（强制写版本，确保一定能下载） -->
+        <!-- ✅ 唯一依赖：只留网关 -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-gateway</artifactId>
             <version>4.0.6</version>
-        </dependency>
-
-        <!-- 公共包 -->
-        <dependency>
-            <groupId>org.example</groupId>
-            <artifactId>common-api</artifactId>
         </dependency>
 
     </dependencies>

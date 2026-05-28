@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 @Tag(name = "管理端 - 秒杀活动管理")
 @RestController
-@RequestMapping("/admin/seckill")
+@RequestMapping("/api/admin/seckill")
 public class AdminSeckillController {
 
     private final SeckillService seckillService;

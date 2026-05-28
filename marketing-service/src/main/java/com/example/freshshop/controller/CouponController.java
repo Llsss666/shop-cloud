@@ -15,7 +15,7 @@ import java.util.List;
 
 @Tag(name = "优惠券管理")
 @RestController
-@RequestMapping("/coupon")
+@RequestMapping("/api/coupon")
 public class CouponController {
 
     // ===================== 只注入 Service =====================

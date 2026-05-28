@@ -13,7 +13,7 @@ import java.util.List;
 
 @Tag(name = "商品分类管理")
 @RestController
-@RequestMapping("/category")
+@RequestMapping("/api/category")
 public class CategoryController {
 
     private final CategoryService categoryService;

@@ -13,6 +13,9 @@ public interface GoodsService extends IService<Goods> {
     Result<Page<Goods>> pageList(Integer page, Integer size, Long categoryId, String name, List<Long> categoryIds);
     Result<Void> updateStatus(Long id, Integer status);
     // ========== 新增以下两个方法 ==========
-    boolean deductStock(Long goodsId, int num);
-    void cancelOrderStockBack(Long goodsId, int num);
+    // 扣库存：新增 orderNo
+    boolean deductStock(Long goodsId, int num, String orderNo);
+
+    // 回补库存：新增 orderNo
+    void cancelOrderStockBack(Long goodsId, int num, String orderNo);
 }

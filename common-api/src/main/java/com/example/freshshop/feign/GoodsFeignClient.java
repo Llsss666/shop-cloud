@@ -7,17 +7,21 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "product-service")
+@FeignClient(name = "product-service", contextId = "goodsFeign")
 public interface GoodsFeignClient {
 
     @GetMapping("/feign/goods/get")
     Result<GoodsDTO> getGoods(@RequestParam("goodsId") Long goodsId);
 
     @PostMapping("/feign/goods/deductStock")
-    Result<Boolean> deductStock(@RequestParam("goodsId") Long goodsId,
-                                @RequestParam("num") Integer num);
+    Result<Boolean> deductStock(
+            @RequestParam("goodsId") Long goodsId,
+            @RequestParam("num") Integer num,
+            @RequestParam("orderNo") String orderNo);
 
     @PostMapping("/feign/goods/returnStock")
-    Result<Void> returnStock(@RequestParam("goodsId") Long goodsId,
-                             @RequestParam("num") Integer num);
+    Result<Void> returnStock(
+            @RequestParam("goodsId") Long goodsId,
+            @RequestParam("num") Integer num,
+            @RequestParam("orderNo") String orderNo);
 }

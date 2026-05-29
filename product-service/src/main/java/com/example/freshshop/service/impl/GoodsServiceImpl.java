@@ -110,7 +110,7 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
     }
 
     // ====================== 🔥 扣库存 → 发送 MQ 消息 ======================
-    public boolean deductStock(Long goodsId, int num) {
+    public boolean deductStock(Long goodsId, int num, String orderNo) {
         String stockKey = String.format(GOODS_STOCK_KEY, goodsId);
         Long remain = redisTemplateDb1.opsForValue().decrement(stockKey, num);
 
@@ -119,32 +119,26 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
             return false;
         }
 
-        // ====================== ✅ 发送 MQ 消息 ======================
+        // 统一四段消息：orderNo:goodsId:num:deduct
+        String msg = orderNo + ":" + goodsId + ":" + num + ":deduct";
         try {
-            rocketMQTemplate.syncSend(
-                    "stock-update-topic",
-                    MessageBuilder.withPayload(goodsId + ":" + num + ":deduct").build()
-            );
-            System.out.println("✅ MQ 扣库存消息发送成功：" + goodsId + " -" + num);
+            rocketMQTemplate.syncSend("stock-update-topic", MessageBuilder.withPayload(msg).build());
+            System.out.println("✅ MQ 扣库存消息：" + msg);
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         return true;
     }
 
-    // ====================== 🔥 取消订单 → 发送 MQ 回补库存 ======================
-    public void cancelOrderStockBack(Long goodsId, int num) {
+    public void cancelOrderStockBack(Long goodsId, int num, String orderNo) {
         String stockKey = String.format(GOODS_STOCK_KEY, goodsId);
         redisTemplateDb1.opsForValue().increment(stockKey, num);
 
-        // ====================== ✅ 发送 MQ 消息 ======================
+        // 统一四段消息：orderNo:goodsId:num:add
+        String msg = orderNo + ":" + goodsId + ":" + num + ":add";
         try {
-            rocketMQTemplate.syncSend(
-                    "stock-update-topic",
-                    MessageBuilder.withPayload(goodsId + ":" + num + ":add").build()
-            );
-            System.out.println("✅ MQ 库存回补消息发送成功：" + goodsId + " +" + num);
+            rocketMQTemplate.syncSend("stock-update-topic", MessageBuilder.withPayload(msg).build());
+            System.out.println("✅ MQ 回补库存消息：" + msg);
         } catch (Exception e) {
             e.printStackTrace();
         }

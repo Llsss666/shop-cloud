@@ -31,11 +31,15 @@ public class FeignGoodsController {
     /**
      * 扣减库存（Feign调用）
      */
+    /**
+     * 扣减库存（Feign调用）
+     */
     @PostMapping("/deductStock")
     public Result<Boolean> deductStock(
             @RequestParam("goodsId") Long goodsId,
-            @RequestParam("num") Integer num) {
-        boolean success = goodsService.deductStock(goodsId, num);
+            @RequestParam("num") Integer num,
+            @RequestParam("orderNo") String orderNo) {
+        boolean success = goodsService.deductStock(goodsId, num, orderNo);
         return Result.success(success);
     }
 
@@ -45,8 +49,9 @@ public class FeignGoodsController {
     @PostMapping("/returnStock")
     public Result<Void> returnStock(
             @RequestParam("goodsId") Long goodsId,
-            @RequestParam("num") Integer num) {
-        goodsService.cancelOrderStockBack(goodsId, num);
+            @RequestParam("num") Integer num,
+            @RequestParam("orderNo") String orderNo) {
+        goodsService.cancelOrderStockBack(goodsId, num, orderNo);
         return Result.success();
     }
 }

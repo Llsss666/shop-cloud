@@ -32,7 +32,6 @@ public class RedisConfig {
 
         LettuceConnectionFactory factory = new LettuceConnectionFactory(config);
         factory.afterPropertiesSet();
-
         return new StringRedisTemplate(factory);
     }
 
@@ -47,11 +46,10 @@ public class RedisConfig {
 
         LettuceConnectionFactory factory = new LettuceConnectionFactory(config);
         factory.afterPropertiesSet();
-
         return new StringRedisTemplate(factory);
     }
 
-    // 2号库：秒杀专用 ✅
+    // 2号库：秒杀专用
     @Bean("redisTemplateDb2")
     public StringRedisTemplate redisTemplateDb2() {
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
@@ -62,10 +60,10 @@ public class RedisConfig {
 
         LettuceConnectionFactory factory = new LettuceConnectionFactory(config);
         factory.afterPropertiesSet();
-
         return new StringRedisTemplate(factory);
     }
-    // 3号库：限流专用 ✅
+
+    // 3号库：限流专用
     @Bean("redisTemplateDb3")
     public StringRedisTemplate redisTemplateDb3() {
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
@@ -76,7 +74,20 @@ public class RedisConfig {
 
         LettuceConnectionFactory factory = new LettuceConnectionFactory(config);
         factory.afterPropertiesSet();
+        return new StringRedisTemplate(factory);
+    }
 
+    // 4号库：MQ幂等、库存分布式锁 专用
+    @Bean("redisTemplateDb4")
+    public StringRedisTemplate redisTemplateDb4() {
+        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
+        config.setHostName(host);
+        config.setPort(port);
+        config.setPassword(password);
+        config.setDatabase(4);
+
+        LettuceConnectionFactory factory = new LettuceConnectionFactory(config);
+        factory.afterPropertiesSet();
         return new StringRedisTemplate(factory);
     }
 }

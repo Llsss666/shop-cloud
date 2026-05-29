@@ -14,4 +14,5 @@ public class GoodsDTO {
     private String image;      // 商品图片
     private BigDecimal price;  // 商品单价
     private Integer stock;     // 库存
+    private Long categoryId;   // 新增：分类ID
 }

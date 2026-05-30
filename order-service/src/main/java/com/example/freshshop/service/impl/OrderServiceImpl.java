@@ -17,6 +17,7 @@ import com.example.freshshop.mapper.OrderItemMapper;
 import com.example.freshshop.mapper.OrderMapper;
 import com.example.freshshop.service.OrderService;
 import com.example.freshshop.vo.*;
+import io.seata.spring.annotation.GlobalTransactional;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -25,12 +26,15 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -204,26 +208,27 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
      * 创建订单：修正库存MQ消息格式，增加 type 字段
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @GlobalTransactional(rollbackFor = Throwable.class)
     public Result<Order> create(Long userId, String address, String phone, String consignee, Long couponId) {
-        // ===================== 新增分布式锁开始 =====================
         String lockKey = ORDER_CREATE_LOCK_PREFIX + userId;
         RLock lock = redissonClient.getLock(lockKey);
-        // 尝试抢锁：不等待，抢到就执行业务，抢不到直接返回
-        boolean locked = lock.tryLock();
+        boolean locked;
+        try {
+            locked = lock.tryLock(0, 30, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return Result.error("下单请求中断，请稍后重试");
+        }
         if (!locked) {
             return Result.error("请勿重复提交订单，请稍后再试");
         }
-        // ===================== 新增分布式锁结束 =====================
 
         try {
-            // 原有全部业务逻辑保持不变
             List<CartDTO> cartList = userFeignClient.getUserCart(userId).getData();
             if (cartList == null || cartList.isEmpty()) {
-                return Result.error("购物车为空");
+                throw new RuntimeException("购物车为空");
             }
 
-            // 先创建订单，拿到 orderNo 再传参给库存接口
             Order order = new Order();
             order.setOrderNo(UUID.randomUUID().toString().replace("-", ""));
             order.setUserId(userId);
@@ -234,18 +239,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             order.setStatus(0);
             order.setCreateTime(LocalDateTime.now());
             save(order);
-
             String orderNo = order.getOrderNo();
 
-            // 扣减库存：新增传入 orderNo
+            // 扣减库存
             for (CartDTO cart : cartList) {
                 Boolean ok = goodsFeignClient.deductStock(cart.getGoodsId(), cart.getNum(), orderNo).getData();
                 if (ok == null || !ok) {
-                    return Result.error("商品库存不足");
+                    throw new RuntimeException("商品库存不足");
                 }
             }
 
-            // 计算商品原始总价（下单阶段不处理优惠券）
+            // 计算金额、封装订单项
             BigDecimal totalAmount = BigDecimal.ZERO;
             List<OrderItem> orderItems = new ArrayList<>();
             for (CartDTO cart : cartList) {
@@ -262,35 +266,51 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 orderItems.add(item);
             }
 
-            // 更新订单总金额
             order.setTotalAmount(totalAmount);
             updateById(order);
 
-            // 保存订单项
             Long oid = order.getId();
             for (OrderItem item : orderItems) {
                 item.setOrderId(oid);
                 orderItemMapper.insert(item);
             }
 
-            // ========== 已删除：订单服务本地发送库存MQ，统一由商品服务发送 ==========
-
-            // 发送15分钟订单超时延迟消息（保留，和库存无关）
-            Message<String> delayMsg = MessageBuilder.withPayload(order.getId().toString()).build();
-            rocketMQTemplate.syncSend("order-timeout-topic", delayMsg, 3000, DELAY_LEVEL_15MIN);
-
             // 清空购物车
             userFeignClient.clearCart(userId);
-            return Result.success(order);
 
-        } finally {
-            // ===================== 新增释放锁开始 =====================
-            // 业务执行完毕，无论成功失败，释放锁
+            // 注册事务回调
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                // 事务提交成功：发MQ + 主动解锁
+                @Override
+                public void afterCommit() {
+                    // 发送延迟消息
+                    Message<String> delayMsg = MessageBuilder.withPayload(order.getId().toString()).build();
+                    rocketMQTemplate.syncSend("order-timeout-topic", delayMsg, 3000, DELAY_LEVEL_15MIN);
+
+                    // 正常提交流程解锁
+                    if (lock.isHeldByCurrentThread()) {
+                        lock.unlock();
+                    }
+                }
+
+                // 【兜底】无论提交/回滚，最终都会执行，二次防锁泄漏
+                @Override
+                public void afterCompletion(int status) {
+                    if (lock.isHeldByCurrentThread()) {
+                        lock.unlock();
+                    }
+                }
+            });
+
+            return Result.success(order);
+        } catch (Exception e) {
+            // 业务异常/回滚：立即解锁
             if (lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }
-            // ===================== 新增释放锁结束 =====================
+            throw new RuntimeException("下单失败", e);
         }
+        // 彻底删除 finally 解锁
     }
 
     /**
@@ -300,11 +320,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
      * 手动取消订单：加分布式锁 + 状态校验，防重复取消、并发冲突
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @GlobalTransactional(rollbackFor = Throwable.class)
     public Result<?> cancelOrder(Long id, Long userId) {
         String lockKey = ORDER_LOCK_PREFIX + id;
         RLock lock = redissonClient.getLock(lockKey);
-        boolean locked = lock.tryLock();
+        boolean locked;
+        try {
+            locked = lock.tryLock(0, 30, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return Result.error("订单操作中断，请稍后重试");
+        }
         if (!locked) {
             return Result.error("订单操作繁忙，请稍后重试");
         }
@@ -312,32 +338,53 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         try {
             Order order = getById(id);
             if (order == null) {
-                return Result.error("订单不存在");
+                throw new RuntimeException("订单不存在");
             }
-            // 仅待支付可取消
             if (order.getStatus() != 0) {
-                return Result.error("订单已支付或已取消，无法取消");
+                throw new RuntimeException("订单已支付或已取消，无法取消");
             }
 
             List<OrderItem> items = orderItemMapper.selectList(
                     new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, id)
             );
-
             String orderNo = order.getOrderNo();
+
+            // 回补库存
             for (OrderItem item : items) {
-                // 回补库存：新增传入 orderNo
                 goodsFeignClient.returnStock(item.getGoodsId(), item.getNum(), orderNo);
             }
 
-            // 更新订单为已取消
             order.setStatus(-1);
             updateById(order);
+
+            // 注册事务回调
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                // 提交成功解锁
+                @Override
+                public void afterCommit() {
+                    if (lock.isHeldByCurrentThread()) {
+                        lock.unlock();
+                    }
+                }
+
+                // 全局兜底解锁
+                @Override
+                public void afterCompletion(int status) {
+                    if (lock.isHeldByCurrentThread()) {
+                        lock.unlock();
+                    }
+                }
+            });
+
             return Result.success("取消成功，库存已恢复");
-        } finally {
+        } catch (Exception e) {
+            // 异常回滚即时解锁
             if (lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }
+            throw new RuntimeException("取消订单失败", e);
         }
+        // 彻底删除 finally 解锁
     }
 
     @Override

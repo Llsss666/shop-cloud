@@ -5,7 +5,6 @@ spring:
   application:
     name: user-service
 
-  # 👇 👇 👇 我给你加上了 Nacos 注册配置！！！ 👇 👇 👇
   cloud:
     nacos:
       discovery:
@@ -28,3 +27,24 @@ mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
   configuration:
     map-underscore-to-camel-case: true
+
+# Seata 全本地file模式，不再依赖Nacos配置中心
+seata:
+  tx-service-group: freshshop_tx_group
+  config:
+    type: file
+  registry:
+    type: file
+  service:
+    vgroup-mapping:
+      freshshop_tx_group: default
+    grouplist:
+      default: 127.0.0.1:8091
+  datasource:
+    proxy:
+      enable: true
+  # 关键修改：序列化改为 seata(protobuf)，兼容 JDK17
+  transport:
+    serialization: seata
+    compressor: none
+    max-frame-size: 20971520

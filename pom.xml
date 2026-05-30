@@ -49,15 +49,6 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <!-- 🔥 Spring Cloud 正确版本（绝对能下载） -->
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>2022.0.5</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
             <!-- 其他不变 -->
             <dependency>
                 <groupId>org.redisson</groupId>
@@ -114,14 +105,6 @@
                 <artifactId>redisson-spring-boot-starter</artifactId>
                 <version>3.29.1</version>
             </dependency>
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>2023.0.3</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
             <!-- Spring Cloud Alibaba 适配 Boot 3.1.x -->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
@@ -139,7 +122,11 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>io.seata</groupId>
+                <artifactId>seata-spring-boot-starter</artifactId>
+                <version>2.0.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
-
 </project>

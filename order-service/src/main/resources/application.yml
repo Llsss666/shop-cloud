@@ -5,7 +5,6 @@ spring:
   application:
     name: order-service
 
-  # 👇 加上 Nacos 注册（必加！）
   cloud:
     nacos:
       discovery:
@@ -33,3 +32,20 @@ rocketmq:
   name-server: 127.0.0.1:9876
   producer:
     group: order-service-group
+
+# Seata 单机客户端配置
+seata:
+  tx-service-group: freshshop_tx_group
+  config:
+    type: file
+  registry:
+    type: file
+  service:
+    vgroup-mapping:
+      freshshop_tx_group: default
+    grouplist:
+      default: 127.0.0.1:8091
+  # 开启数据源代理（AT模式必需）
+  datasource:
+    proxy:
+      enable: true

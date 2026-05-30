@@ -5,7 +5,6 @@ spring:
   application:
     name: file-service
 
-  # ✅ 加上 Nacos 注册（必须加！）
   cloud:
     nacos:
       discovery:
@@ -25,3 +24,23 @@ spring:
 # 图片访问映射
 mvc:
   static-path-pattern: /file/**
+
+# Seata 统一配置
+seata:
+  tx-service-group: freshshop_tx_group
+  config:
+    type: file
+  registry:
+    type: file
+  service:
+    vgroup-mapping:
+      freshshop_tx_group: default
+    grouplist:
+      default: 127.0.0.1:8091
+  datasource:
+    proxy:
+      enable: true
+  transport:
+    serialization: seata
+    compressor: none
+    max-frame-size: 20971520

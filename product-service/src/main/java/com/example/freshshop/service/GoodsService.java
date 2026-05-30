@@ -12,10 +12,12 @@ public interface GoodsService extends IService<Goods> {
     Result<Goods> getGoodsDetail(Long goodsId);
     Result<Page<Goods>> pageList(Integer page, Integer size, Long categoryId, String name, List<Long> categoryIds);
     Result<Void> updateStatus(Long id, Integer status);
-    // ========== 新增以下两个方法 ==========
-    // 扣库存：新增 orderNo
-    boolean deductStock(Long goodsId, int num, String orderNo);
 
-    // 回补库存：新增 orderNo
+    // 原有方法：纯库存操作（无MQ，事务内Feign调用）
+    boolean deductStock(Long goodsId, int num, String orderNo);
     void cancelOrderStockBack(Long goodsId, int num, String orderNo);
+
+    // 新增：单独发送MQ（事务外部调用）
+    void sendDeductStockMq(Long goodsId, int num, String orderNo);
+    void sendAddStockMq(Long goodsId, int num, String orderNo);
 }

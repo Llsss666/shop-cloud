@@ -32,7 +32,6 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
     @Qualifier("redisTemplateDb1")
     private StringRedisTemplate redisTemplateDb1;
 
-    // ====================== 🔥 正常注入，不再需要 required=false ======================
     @Autowired
     private RocketMQTemplate rocketMQTemplate;
 
@@ -49,7 +48,6 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
     public static final String GOODS_STOCK_KEY = "goods:stock:%d";
     public static final long GOODS_INFO_EXPIRE = 1;
 
-    // ====================== 商品库存初始化 ======================
     @PostConstruct
     public void initAllStockToRedis() {
         try {
@@ -65,7 +63,7 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
         }
     }
 
-    // ====================== 商品详情 ======================
+    @Override
     public Result<Goods> getGoodsDetail(Long goodsId) {
         String infoKey = String.format(GOODS_INFO_KEY, goodsId);
         String stockKey = String.format(GOODS_STOCK_KEY, goodsId);
@@ -109,7 +107,8 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
         return Result.success(goods);
     }
 
-    // ====================== 🔥 扣库存 → 发送 MQ 消息 ======================
+    // -------------------------- 纯库存操作（无MQ，实现接口） --------------------------
+    @Override
     public boolean deductStock(Long goodsId, int num, String orderNo) {
         String stockKey = String.format(GOODS_STOCK_KEY, goodsId);
         Long remain = redisTemplateDb1.opsForValue().decrement(stockKey, num);
@@ -118,8 +117,18 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
             redisTemplateDb1.opsForValue().increment(stockKey, num);
             return false;
         }
+        return true;
+    }
 
-        // 统一四段消息：orderNo:goodsId:num:deduct
+    @Override
+    public void cancelOrderStockBack(Long goodsId, int num, String orderNo) {
+        String stockKey = String.format(GOODS_STOCK_KEY, goodsId);
+        redisTemplateDb1.opsForValue().increment(stockKey, num);
+    }
+
+    // -------------------------- 单独发送MQ（实现接口） --------------------------
+    @Override
+    public void sendDeductStockMq(Long goodsId, int num, String orderNo) {
         String msg = orderNo + ":" + goodsId + ":" + num + ":deduct";
         try {
             rocketMQTemplate.syncSend("stock-update-topic", MessageBuilder.withPayload(msg).build());
@@ -127,14 +136,10 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return true;
     }
 
-    public void cancelOrderStockBack(Long goodsId, int num, String orderNo) {
-        String stockKey = String.format(GOODS_STOCK_KEY, goodsId);
-        redisTemplateDb1.opsForValue().increment(stockKey, num);
-
-        // 统一四段消息：orderNo:goodsId:num:add
+    @Override
+    public void sendAddStockMq(Long goodsId, int num, String orderNo) {
         String msg = orderNo + ":" + goodsId + ":" + num + ":add";
         try {
             rocketMQTemplate.syncSend("stock-update-topic", MessageBuilder.withPayload(msg).build());
@@ -144,7 +149,6 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
         }
     }
 
-    // ====================== 修改商品 ======================
     @Override
     public boolean updateById(Goods goods) {
         boolean success = super.updateById(goods);
@@ -159,7 +163,6 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
         return success;
     }
 
-    // ====================== 商品列表 ======================
     @Override
     public Result<Page<Goods>> pageList(Integer page, Integer size, Long categoryId, String name, List<Long> categoryIds) {
         List<Goods> allGoods = new ArrayList<>();

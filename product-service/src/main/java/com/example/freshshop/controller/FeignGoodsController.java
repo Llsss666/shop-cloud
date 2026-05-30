@@ -15,43 +15,48 @@ public class FeignGoodsController {
 
     private final GoodsService goodsService;
 
-    // 构造注入
     public FeignGoodsController(GoodsService goodsService) {
         this.goodsService = goodsService;
     }
 
-    /**
-     * 根据ID获取商品信息（Feign调用）
-     */
     @GetMapping("/get")
     public Result<Goods> getGoods(@RequestParam("goodsId") Long goodsId) {
         return goodsService.getGoodsDetail(goodsId);
     }
 
-    /**
-     * 扣减库存（Feign调用）
-     */
-    /**
-     * 扣减库存（Feign调用）
-     */
     @PostMapping("/deductStock")
     public Result<Boolean> deductStock(
             @RequestParam("goodsId") Long goodsId,
             @RequestParam("num") Integer num,
             @RequestParam("orderNo") String orderNo) {
-        boolean success = goodsService.deductStock(goodsId, num, orderNo);
-        return Result.success(success);
+        boolean res = goodsService.deductStock(goodsId, num, orderNo);
+        return Result.success(res);
     }
 
-    /**
-     * 返还/回补库存（Feign调用）
-     */
     @PostMapping("/returnStock")
     public Result<Void> returnStock(
             @RequestParam("goodsId") Long goodsId,
             @RequestParam("num") Integer num,
             @RequestParam("orderNo") String orderNo) {
         goodsService.cancelOrderStockBack(goodsId, num, orderNo);
+        return Result.success();
+    }
+
+    @PostMapping("/sendDeductMq")
+    public Result<Void> sendDeductMq(
+            @RequestParam("goodsId") Long goodsId,
+            @RequestParam("num") Integer num,
+            @RequestParam("orderNo") String orderNo) {
+        goodsService.sendDeductStockMq(goodsId, num, orderNo);
+        return Result.success();
+    }
+
+    @PostMapping("/sendAddMq")
+    public Result<Void> sendAddMq(
+            @RequestParam("goodsId") Long goodsId,
+            @RequestParam("num") Integer num,
+            @RequestParam("orderNo") String orderNo) {
+        goodsService.sendAddStockMq(goodsId, num, orderNo);
         return Result.success();
     }
 }
